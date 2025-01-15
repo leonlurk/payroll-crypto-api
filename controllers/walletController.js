@@ -1,7 +1,9 @@
 const QRCode = require('qrcode');
-const { TronWeb } = require('tronweb');
+const { TronWeb } = require('tronweb'); // Nota: Así se importa correctamente TronWeb
 const Web3 = require('web3').default;
-const User = require('../models/userModel'); // Cambia la ruta si es necesario
+const User = require('../models/userModel'); // Ajustar la ruta si es necesario
+const crypto = require('crypto');
+const TempPayment = require('../models/tempPaymentModel'); // Ajustar la ruta según tu estructura
 
 // Inicializar TronWeb y Web3 usando las variables de entorno
 const tronWeb = new TronWeb({
@@ -10,7 +12,6 @@ const tronWeb = new TronWeb({
 });
 
 const web3Bsc = new Web3(new Web3.providers.HttpProvider(process.env.BSC_URL));
-
 
 // Función para generar una billetera temporal
 exports.generateWallet = async (req, res) => {
@@ -23,22 +24,20 @@ exports.generateWallet = async (req, res) => {
             return res.status(404).json({ msg: 'Usuario no encontrado' });
         }
 
-        // Generar una billetera TRON
-        const tronWallet = await tronWeb.createAccount();
-
-        // Generar una billetera BSC
+        // Generar billeteras para TRON y BSC
+        const tronWallet = await tronWeb.createAccount(); // Lógica original de TronWeb
         const bscWallet = web3Bsc.eth.accounts.create();
 
-        // Generar códigos QR para las direcciones de las billeteras
+        // Generar códigos QR para las billeteras
         const tronQR = await QRCode.toDataURL(tronWallet.address.base58);
         const bscQR = await QRCode.toDataURL(bscWallet.address);
 
-        // Guardar las billeteras generadas en la base de datos
+        // Guardar las billeteras en la base de datos del usuario
         user.tronWallet = tronWallet.address.base58;
         user.bscWallet = bscWallet.address;
         await user.save();
 
-        // Responder con las billeteras generadas y los códigos QR
+        // Responder con las billeteras generadas
         res.json({
             msg: 'Billeteras temporales generadas y asociadas al usuario',
             tron: {
@@ -58,15 +57,12 @@ exports.generateWallet = async (req, res) => {
     }
 };
 
-
-
 // Función para transferir fondos
 exports.transferFunds = async (req, res) => {
-    const { tronWallet, bscWallet } = req.body; // Datos de las billeteras temporales proporcionados por el cliente
+    const { tronWallet, bscWallet } = req.body;
 
     try {
-        // Obtener la billetera principal del usuario
-        const userId = req.user.id; // ID del usuario autenticado
+        const userId = req.user; // ID del usuario autenticado
         const user = await User.findById(userId);
 
         if (!user || !user.mainWallet) {
@@ -82,9 +78,7 @@ exports.transferFunds = async (req, res) => {
         // Transferencia TRON
         if (tronBalance > 0) {
             const transaction = await tronWeb.transactionBuilder.sendTrx(
-                mainWalletAddress, // Usar la billetera principal del usuario
-                tronBalance,
-                tronWallet.address
+                mainWalletAddress, tronBalance, tronWallet.address
             );
             const signedTransaction = await tronWeb.trx.sign(transaction, tronWallet.privateKey);
             await tronWeb.trx.sendRawTransaction(signedTransaction);
@@ -93,10 +87,10 @@ exports.transferFunds = async (req, res) => {
         // Transferencia BSC
         if (bscBalance > 0) {
             const signedTransaction = await web3Bsc.eth.accounts.signTransaction({
-                to: mainWalletAddress, // Usar la billetera principal del usuario
+                to: mainWalletAddress,
                 value: bscBalance,
                 gas: 21000,
-                gasPrice: await web3Bsc.eth.getGasPrice(),
+                gasPrice: await web3Bsc.eth.getGasPrice()
             }, bscWallet.privateKey);
             await web3Bsc.eth.sendSignedTransaction(signedTransaction.rawTransaction);
         }
@@ -105,5 +99,74 @@ exports.transferFunds = async (req, res) => {
     } catch (error) {
         console.error("Error al transferir fondos:", error);
         res.status(500).json({ msg: "Error al transferir fondos" });
+    }
+};
+
+// Endpoint para generar una URL temporal
+exports.generatePaymentPage = async (req, res) => {
+    const { amount, currency, network } = req.body;
+
+    try {
+        const userId = req.user;
+        const user = await User.findById(userId);
+
+        if (!user || !user.mainWallet) {
+            return res.status(400).json({ msg: 'No se ha configurado una billetera principal para este usuario' });
+        }
+
+        const uniqueId = crypto.randomBytes(16).toString('hex');
+
+        // Crear el payload del QR con los datos del pago
+        const qrPayload = {
+            amount,
+            currency,
+            network,
+            address: user.mainWallet.address,
+        };
+
+        // Generar el QR como Data URL
+        const qrCode = await QRCode.toDataURL(JSON.stringify(qrPayload));
+
+        // Crear el documento temporal en la base de datos
+        const tempPayment = new TempPayment({
+            uniqueId,
+            paymentData: {
+                amount,
+                currency,
+                network,
+                mainWallet: user.mainWallet.address,
+                userName: user.name,
+                qrCode, // Agregar el QR al documento
+            }
+        });
+
+        await tempPayment.save();
+
+        // Generar la URL
+        const url = `${process.env.FRONTEND_BASE_URL}/payment/${uniqueId}`;
+        res.json({ url });
+    } catch (error) {
+        console.error('Error al generar la página de pago:', error);
+        res.status(500).json({ msg: 'Error al generar la página de pago' });
+    }
+};
+
+
+
+// Endpoint para obtener los datos del pago desde un uniqueId
+exports.getPaymentData = async (req, res) => {
+    const { uniqueId } = req.params;
+
+    try {
+        const payment = await TempPayment.findOne({ uniqueId });
+
+        if (!payment) {
+            return res.status(404).json({ msg: 'No se encontró la información del pago o ha expirado' });
+        }
+
+        res.json(payment.paymentData);
+    } catch (error) {
+        console.error('Error al obtener los datos del pago:', error);
+        res.status(500).json({ msg: 'Error al obtener los datos del pago' });
     }
 };

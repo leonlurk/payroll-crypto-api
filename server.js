@@ -2,15 +2,23 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
 const walletRoutes = require('./routes/walletRoutes');
-const User = require('./models/userModel');
 
 // Inicializar aplicación Express
 const app = express();
 
+// Configuración de CORS
+app.use(cors({ origin: 'http://localhost:3001' }));
+
 // Middleware para parsear JSON
 app.use(express.json());
+
+// Redirigir cualquier solicitud que no sea API al frontend
+app.get('/payment/:uniqueId', (req, res) => {
+    res.redirect(`http://localhost:3001/payment/${req.params.uniqueId}`);
+});
 
 // Conexión a la base de datos MongoDB
 mongoose.connect(process.env.MONGO_URI)
@@ -19,7 +27,6 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Definir las rutas de usuario
 app.use('/api/users', userRoutes);
-
 app.use('/api/wallet', walletRoutes);
 
 // Ruta de prueba
@@ -29,12 +36,6 @@ app.get('/', (req, res) => {
 
 // Definir el puerto
 const PORT = process.env.PORT || 3000;
-
-const cors = require('cors');
-
-// Configuración de CORS
-app.use(cors());
-
 
 // Iniciar el servidor
 app.listen(PORT, () => {
