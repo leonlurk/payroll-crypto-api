@@ -10,18 +10,34 @@ const walletRoutes = require('./routes/walletRoutes');
 const app = express();
 
 // Configuración de CORS
-app.use(cors({ origin: 'http://localhost:3001' }));
+const allowedOrigins = [
+    'http://localhost:3001', // Desarrollo local
+    'https://scintillating-bonbon-513563.netlify.app' // Producción
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    }
+}));
 
 // Middleware para parsear JSON
 app.use(express.json());
 
 // Redirigir cualquier solicitud que no sea API al frontend
 app.get('/payment/:uniqueId', (req, res) => {
-    res.redirect(`http://localhost:3001/payment/${req.params.uniqueId}`);
+    res.redirect(`https://scintillating-bonbon-513563.netlify.app/payment/${req.params.uniqueId}`);
 });
 
 // Conexión a la base de datos MongoDB
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
     .then(() => console.log('Conectado a la base de datos'))
     .catch((err) => console.error('Error al conectar a la base de datos:', err));
 
