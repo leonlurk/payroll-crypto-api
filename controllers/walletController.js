@@ -108,23 +108,21 @@ exports.generatePaymentPage = async (req, res) => {
 
     try {
         const userId = req.user;
-        console.log("Unique ID recibido en backend:", uniqueId);
-        const user = await User.findById(userId);
-        console.log("Resultado de búsqueda en MongoDB:", payment);
-        if (!user || !user.mainWallet) {
-               console.log("Resultado de búsqueda en MongoDB:", payment);
+        const uniqueId = crypto.randomBytes(16).toString('hex'); // Mover la inicialización aquí
+        console.log("Unique ID generado en backend:", uniqueId);
 
+        const user = await User.findById(userId);
+        if (!user || !user.mainWallet) {
+            console.log("Usuario o billetera principal no encontrados:", user);
             return res.status(400).json({ msg: 'No se ha configurado una billetera principal para este usuario' });
         }
-
-        const uniqueId = crypto.randomBytes(16).toString('hex');
 
         // Crear el payload del QR con los datos del pago
         const qrPayload = {
             amount,
             currency,
             network,
-            address: user.mainWallet.address,
+            address: user.mainWallet,
         };
 
         // Generar el QR como Data URL
@@ -137,7 +135,7 @@ exports.generatePaymentPage = async (req, res) => {
                 amount,
                 currency,
                 network,
-                mainWallet: user.mainWallet.address,
+                mainWallet: user.mainWallet,
                 userName: user.name,
                 qrCode, // Agregar el QR al documento
             }
