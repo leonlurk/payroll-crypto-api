@@ -19,7 +19,7 @@ const app = express();
 // Configuración de CORS
 const allowedOrigins = [
     'http://localhost:3001', // Desarrollo local
-    'https://scintillating-bonbon-513563.netlify.app' // Producción
+    'https://api-payment-site.netlify.app' // Nuevo dominio de producción
 ];
 
 app.use(cors({
@@ -27,6 +27,7 @@ app.use(cors({
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
+            console.error(`Origen no permitido por CORS: ${origin}`);
             callback(new Error('Not allowed by CORS'));
         }
     }
@@ -37,7 +38,8 @@ app.use(express.json());
 
 // Redirigir cualquier solicitud que no sea API al frontend
 app.get('/payment/:uniqueId', (req, res) => {
-    res.redirect(`https://scintillating-bonbon-513563.netlify.app/payment/${req.params.uniqueId}`);
+    console.log(`Redirigiendo a: https://api-payment-site.netlify.app/payment/${req.params.uniqueId}`);
+    res.redirect(`https://api-payment-site.netlify.app/payment/${req.params.uniqueId}`);
 });
 
 // Conexión a la base de datos MongoDB
