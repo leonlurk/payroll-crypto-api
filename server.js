@@ -6,6 +6,13 @@ const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
 const walletRoutes = require('./routes/walletRoutes');
 
+// Verificar variables de entorno cargadas
+console.log("Variables de entorno cargadas:");
+console.log("MONGO_URI:", process.env.MONGO_URI);
+console.log("JWT_SECRET:", process.env.JWT_SECRET);
+console.log("PORT:", process.env.PORT);
+console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
+
 // Inicializar aplicación Express
 const app = express();
 
