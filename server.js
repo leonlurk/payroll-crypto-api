@@ -72,8 +72,6 @@ app.get('/api/wallet/generate-payment-url/:uniqueId', (req, res) => {
     res.json({ paymentUrl: cleanUrl });
 });
 
-
-
 // Conexión a la base de datos MongoDB
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
