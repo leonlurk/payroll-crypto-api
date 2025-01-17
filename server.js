@@ -64,16 +64,19 @@ app.get('/api/wallet/generate-payment-url/:uniqueId', (req, res) => {
     const { uniqueId } = req.params;
     console.log("📌 Generando URL para Unique ID:", uniqueId);
 
-    // 🔥 Construcción directa de la URL sin depender de `FRONTEND_URL`
-    const baseDomain = "https://api-payment-site.netlify.app"; // 🔴 Definir explícitamente sin "/" al final
-    const paymentPath = `/payment/${uniqueId}`; // 🔴 Definir explícitamente con "/" al inicio
+    // 🔥 Asegurar que baseDomain NO termine con "/"
+    const baseDomain = "https://api-payment-site.netlify.app".replace(/\/$/, ""); 
 
-    // ✅ Concatenar sin posibilidad de error
-    const finalUrl = `${baseDomain}${paymentPath}`;
+    // 🔥 Asegurar que paymentPath NO tenga "/" al inicio
+    const paymentPath = `payment/${uniqueId}`; 
+
+    // ✅ Concatenar de manera segura
+    const finalUrl = `${baseDomain}/${paymentPath}`;
     
     console.log("✅ URL Generada Correctamente:", finalUrl);
     res.json({ paymentUrl: finalUrl });
 });
+
 
 
 
