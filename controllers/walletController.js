@@ -14,7 +14,7 @@ const tronWeb = new TronWeb({
 const web3Bsc = new Web3(new Web3.providers.HttpProvider(process.env.BSC_URL));
 
 // Determinar la URL del frontend basada en el entorno
-const FRONTEND_URL = process.env.FRONTEND_BASE_URL || 'https://api-payment-site.netlify.app';
+const FRONTEND_URL = (process.env.FRONTEND_BASE_URL || 'https://api-payment-site.netlify.app').replace(/\/$/, "");
 console.log("✅ FRONTEND_URL en WalletController:", FRONTEND_URL);
 
 // Función para generar una billetera temporal
@@ -102,17 +102,9 @@ exports.generatePaymentPage = async (req, res) => {
             return res.status(400).json({ msg: 'No se ha configurado una billetera principal para este usuario' });
         }
 
-        // Crear el payload del QR con los datos del pago
-        const qrPayload = {
-            amount,
-            currency,
-            network,
-            address: user.mainWallet,
-        };
-
+        const qrPayload = { amount, currency, network, address: user.mainWallet };
         const qrCode = await QRCode.toDataURL(JSON.stringify(qrPayload));
 
-        // Guardar la información del pago en la base de datos
         const tempPayment = new TempPayment({
             uniqueId,
             paymentData: {
@@ -127,8 +119,9 @@ exports.generatePaymentPage = async (req, res) => {
 
         await tempPayment.save();
 
-        const url = `${FRONTEND_URL}/payment/${uniqueId}`;
-        console.log("✅ URL generada:", url);
+        // 🔥 Usar `path.posix.join()` para evitar `//`
+        const url = path.posix.join(FRONTEND_URL, "payment", uniqueId);
+        console.log("✅ URL generada correctamente:", url);
 
         res.json({ url });
     } catch (error) {
