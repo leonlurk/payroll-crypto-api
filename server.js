@@ -64,11 +64,14 @@ app.get('/api/wallet/generate-payment-url/:uniqueId', (req, res) => {
     const { uniqueId } = req.params;
     console.log("📌 Generando URL para Unique ID:", uniqueId);
 
-    const cleanUrl = `${FRONTEND_URL}/payment/${uniqueId}`.replace(/([^:]\/)\/+/g, "$1"); // Elimina doble slash
-    console.log("✅ URL corregida:", cleanUrl);
+    // 🔥 Corrige el doble slash con `.replace()`
+    const cleanUrl = `${FRONTEND_URL}/payment/${uniqueId}`.replace(/([^:])\/\//g, "$1/");
+
+    console.log("✅ URL corregida (sin doble slash):", cleanUrl);
 
     res.json({ paymentUrl: cleanUrl });
 });
+
 
 
 // Conexión a la base de datos MongoDB
