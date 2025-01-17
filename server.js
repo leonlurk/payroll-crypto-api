@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
 const walletRoutes = require('./routes/walletRoutes');
+const path = require("path");
 
 // Detectar entorno (local o producción)
 const isProduction = process.env.ENV === 'production';
@@ -65,14 +66,14 @@ app.get('/api/wallet/generate-payment-url/:uniqueId', (req, res) => {
     console.log("📌 Generando URL para Unique ID:", uniqueId);
 
     // 🔥 Asegurar que baseDomain NO termine con "/"
-    const baseDomain = "https://api-payment-site.netlify.app".replace(/\/$/, ""); 
+    const baseDomain = "https://api-payment-site.netlify.app".replace(/\/$/, "");
 
     // 🔥 Asegurar que paymentPath NO tenga "/" al inicio
-    const paymentPath = `payment/${uniqueId}`; 
+    const paymentPath = `payment/${uniqueId}`.replace(/^\/+/, ""); 
 
-    // ✅ Concatenar de manera segura
-    const finalUrl = `${baseDomain}/${paymentPath}`;
-    
+    // ✅ Usar path.posix.join() para garantizar que no haya doble slash
+    const finalUrl = path.posix.join(baseDomain, paymentPath);
+
     console.log("✅ URL Generada Correctamente:", finalUrl);
     res.json({ paymentUrl: finalUrl });
 });
