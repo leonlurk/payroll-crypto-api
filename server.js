@@ -60,17 +60,15 @@ app.get('/api/wallet/payment-data/:uniqueId', async (req, res) => {
 
 
 // Redirigir cualquier solicitud que no sea API al frontend correcto
-app.get('/payment/:uniqueId', (req, res) => {
-    if (!req.headers.accept.includes('application/json')) {  // Solo redirigir si NO es una petición JSON
-        console.log(`🔄 Redirigiendo a: ${FRONTEND_URL}/payment/${req.params.uniqueId}`);
-        return res.redirect(`${FRONTEND_URL}/payment/${req.params.uniqueId}`);
-    }
-    res.status(400).json({ error: "Esta ruta solo redirige a la UI, no devuelve datos." });
-});
+app.get('/api/wallet/generate-payment-url/:uniqueId', (req, res) => {
+    const { uniqueId } = req.params;
+    console.log("📌 Generando URL para Unique ID:", uniqueId);
 
-const cleanUrl = `${FRONTEND_URL}/payment/${uniqueId}`.replace(/([^:]\/)\/+/g, "$1"); // Elimina doble slash
-console.log("✅ URL corregida:", cleanUrl);
-res.json({ paymentUrl: cleanUrl });
+    const cleanUrl = `${FRONTEND_URL}/payment/${uniqueId}`.replace(/([^:]\/)\/+/g, "$1"); // Elimina doble slash
+    console.log("✅ URL corregida:", cleanUrl);
+
+    res.json({ paymentUrl: cleanUrl });
+});
 
 
 // Conexión a la base de datos MongoDB
