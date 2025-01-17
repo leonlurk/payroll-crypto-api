@@ -68,6 +68,10 @@ app.get('/payment/:uniqueId', (req, res) => {
     res.status(400).json({ error: "Esta ruta solo redirige a la UI, no devuelve datos." });
 });
 
+const cleanUrl = `${FRONTEND_URL}/payment/${uniqueId}`.replace(/([^:]\/)\/+/g, "$1"); // Elimina doble slash
+console.log("✅ URL corregida:", cleanUrl);
+res.json({ paymentUrl: cleanUrl });
+
 
 // Conexión a la base de datos MongoDB
 mongoose.connect(process.env.MONGO_URI, {
