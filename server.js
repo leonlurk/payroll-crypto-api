@@ -1,6 +1,7 @@
 // Importar librerías
 require('dotenv').config();
 console.log("⚠️ Todas las variables de entorno:", process.env);
+const PaymentModel = require('./models/tempPaymentModel'); // Ajusta la ruta si es necesario
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -40,11 +41,33 @@ app.use(cors({
 // Middleware para parsear JSON
 app.use(express.json());
 
+app.get('/api/wallet/payment-data/:uniqueId', async (req, res) => {
+    try {
+        const { uniqueId } = req.params;
+        console.log("📌 Buscando pago con Unique ID:", uniqueId);
+
+        const payment = await PaymentModel.findOne({ uniqueId });
+        if (!payment) {
+            return res.status(404).json({ error: "⚠️ Pago no encontrado" });
+        }
+
+        res.json(payment); // 🚀 Asegura que siempre devuelve JSON
+    } catch (error) {
+        console.error("❌ Error en /payment-data:", error);
+        res.status(500).json({ error: "Error en el servidor" });
+    }
+});
+
+
 // Redirigir cualquier solicitud que no sea API al frontend correcto
 app.get('/payment/:uniqueId', (req, res) => {
-    console.log(`Redirigiendo a: ${FRONTEND_URL}/payment/${req.params.uniqueId}`);
-    res.redirect(`${FRONTEND_URL}/payment/${req.params.uniqueId}`);
+    if (!req.headers.accept.includes('application/json')) {  // Solo redirigir si NO es una petición JSON
+        console.log(`🔄 Redirigiendo a: ${FRONTEND_URL}/payment/${req.params.uniqueId}`);
+        return res.redirect(`${FRONTEND_URL}/payment/${req.params.uniqueId}`);
+    }
+    res.status(400).json({ error: "Esta ruta solo redirige a la UI, no devuelve datos." });
 });
+
 
 // Conexión a la base de datos MongoDB
 mongoose.connect(process.env.MONGO_URI, {
