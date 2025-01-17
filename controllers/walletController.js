@@ -14,8 +14,8 @@ const tronWeb = new TronWeb({
 const web3Bsc = new Web3(new Web3.providers.HttpProvider(process.env.BSC_URL));
 
 // Determinar la URL del frontend basada en el entorno
-const FRONTEND_URL = process.env.ENV === 'production' ? process.env.PROD_FRONTEND_URL : process.env.LOCAL_FRONTEND_URL;
-console.log("🚀 FRONTEND_URL en uso:", FRONTEND_URL);
+const FRONTEND_URL = process.env.FRONTEND_BASE_URL || 'https://api-payment-site.netlify.app';
+console.log("✅ FRONTEND_URL en WalletController:", FRONTEND_URL);
 
 // Función para generar una billetera temporal
 exports.generateWallet = async (req, res) => {
