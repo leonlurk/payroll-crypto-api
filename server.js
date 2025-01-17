@@ -1,5 +1,6 @@
 // Importar librerías
 require('dotenv').config();
+console.log("⚠️ Todas las variables de entorno:", process.env);
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
