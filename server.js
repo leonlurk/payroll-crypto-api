@@ -8,7 +8,7 @@ const walletRoutes = require('./routes/walletRoutes');
 
 // Detectar entorno (local o producción)
 const isProduction = process.env.ENV === 'production';
-const FRONTEND_URL = isProduction ? process.env.PROD_FRONTEND_URL : process.env.LOCAL_FRONTEND_URL;
+const FRONTEND_URL = process.env.FRONTEND_BASE_URL || process.env.PROD_FRONTEND_URL || process.env.LOCAL_FRONTEND_URL;
 
 console.log("Variables de entorno cargadas:");
 console.log("MONGO_URI:", process.env.MONGO_URI);
