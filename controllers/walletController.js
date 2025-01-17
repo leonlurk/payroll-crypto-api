@@ -4,6 +4,7 @@ const Web3 = require('web3').default;
 const User = require('../models/userModel');
 const crypto = require('crypto');
 const TempPayment = require('../models/tempPaymentModel');
+const path = require("path");
 
 // Inicializar TronWeb y Web3 usando las variables de entorno
 const tronWeb = new TronWeb({
