@@ -42,6 +42,7 @@ app.use(cors({
 // Middleware para parsear JSON
 app.use(express.json());
 
+// 🔹 Endpoint para obtener datos de un pago específico
 app.get('/api/wallet/payment-data/:uniqueId', async (req, res) => {
     try {
         const { uniqueId } = req.params;
@@ -59,8 +60,7 @@ app.get('/api/wallet/payment-data/:uniqueId', async (req, res) => {
     }
 });
 
-
-// Redirigir cualquier solicitud que no sea API al frontend correcto
+// 🔹 Endpoint para generar una URL de pago segura
 app.get('/api/wallet/generate-payment-url/:uniqueId', (req, res) => {
     const { uniqueId } = req.params;
     console.log("📌 Generando URL para Unique ID:", uniqueId);
@@ -78,24 +78,30 @@ app.get('/api/wallet/generate-payment-url/:uniqueId', (req, res) => {
     res.json({ paymentUrl: finalUrl });
 });
 
+// 🔹 Redirigir tráfico a la página del frontend correctamente
+app.get('/payment/:uniqueId', (req, res) => {
+    const { uniqueId } = req.params;
+    const finalUrl = `https://api-payment-site.netlify.app/payment/${uniqueId}`;
 
+    console.log(`🔄 Redirigiendo correctamente a: ${finalUrl}`);
+    res.redirect(finalUrl);
+});
 
-
-// Conexión a la base de datos MongoDB
+// 🔹 Conexión a la base de datos MongoDB
 mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
-    .then(() => console.log('Conectado a la base de datos'))
-    .catch((err) => console.error('Error al conectar a la base de datos:', err));
+    .then(() => console.log('✅ Conectado a la base de datos'))
+    .catch((err) => console.error('❌ Error al conectar a la base de datos:', err));
 
-// Definir las rutas de usuario
+// 🔹 Definir las rutas de usuario y billetera
 app.use('/api/users', userRoutes);
 app.use('/api/wallet', walletRoutes);
 
-// Ruta de prueba
+// 🔹 Ruta de prueba para verificar que el servidor está activo
 app.get('/', (req, res) => {
-    res.send('¡Bienvenido a la API de Payroll Crypto!');
+    res.send('🚀 ¡Bienvenido a la API de Payroll Crypto!');
 });
 
 // Definir el puerto
@@ -103,5 +109,5 @@ const PORT = process.env.PORT || 3000;
 
 // Iniciar el servidor
 app.listen(PORT, () => {
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
+    console.log(`🎯 Servidor corriendo en el puerto ${PORT}`);
 });
