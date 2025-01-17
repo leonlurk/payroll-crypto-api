@@ -6,12 +6,15 @@ const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
 const walletRoutes = require('./routes/walletRoutes');
 
-// Verificar variables de entorno cargadas
+// Detectar entorno (local o producción)
+const isProduction = process.env.ENV === 'production';
+const FRONTEND_URL = isProduction ? process.env.PROD_FRONTEND_URL : process.env.LOCAL_FRONTEND_URL;
+
 console.log("Variables de entorno cargadas:");
 console.log("MONGO_URI:", process.env.MONGO_URI);
 console.log("JWT_SECRET:", process.env.JWT_SECRET);
 console.log("PORT:", process.env.PORT);
-console.log("FRONTEND_URL:", process.env.FRONTEND_URL);
+console.log("FRONTEND_URL en uso:", FRONTEND_URL);
 
 // Inicializar aplicación Express
 const app = express();
@@ -19,7 +22,7 @@ const app = express();
 // Configuración de CORS
 const allowedOrigins = [
     'http://localhost:3001', // Desarrollo local
-    'https://api-payment-site.netlify.app' // Nuevo dominio de producción
+    'https://api-payment-site.netlify.app' // Producción
 ];
 
 app.use(cors({
@@ -36,10 +39,10 @@ app.use(cors({
 // Middleware para parsear JSON
 app.use(express.json());
 
-// Redirigir cualquier solicitud que no sea API al frontend
+// Redirigir cualquier solicitud que no sea API al frontend correcto
 app.get('/payment/:uniqueId', (req, res) => {
-    console.log(`Redirigiendo a: https://api-payment-site.netlify.app/payment/${req.params.uniqueId}`);
-    res.redirect(`https://api-payment-site.netlify.app/payment/${req.params.uniqueId}`);
+    console.log(`Redirigiendo a: ${FRONTEND_URL}/payment/${req.params.uniqueId}`);
+    res.redirect(`${FRONTEND_URL}/payment/${req.params.uniqueId}`);
 });
 
 // Conexión a la base de datos MongoDB

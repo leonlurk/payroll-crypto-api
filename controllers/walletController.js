@@ -1,9 +1,9 @@
 const QRCode = require('qrcode');
-const { TronWeb } = require('tronweb'); // Nota: Así se importa correctamente TronWeb
+const { TronWeb } = require('tronweb');
 const Web3 = require('web3').default;
-const User = require('../models/userModel'); // Ajustar la ruta si es necesario
+const User = require('../models/userModel');
 const crypto = require('crypto');
-const TempPayment = require('../models/tempPaymentModel'); // Ajustar la ruta según tu estructura
+const TempPayment = require('../models/tempPaymentModel');
 
 // Inicializar TronWeb y Web3 usando las variables de entorno
 const tronWeb = new TronWeb({
@@ -13,46 +13,36 @@ const tronWeb = new TronWeb({
 
 const web3Bsc = new Web3(new Web3.providers.HttpProvider(process.env.BSC_URL));
 
+// Determinar la URL del frontend basada en el entorno
+const FRONTEND_URL = process.env.ENV === 'production' ? process.env.PROD_FRONTEND_URL : process.env.LOCAL_FRONTEND_URL;
+console.log("🚀 FRONTEND_URL en uso:", FRONTEND_URL);
+
 // Función para generar una billetera temporal
 exports.generateWallet = async (req, res) => {
     try {
-        const userId = req.user; // El middleware `protect` debe establecer el ID del usuario en `req.user`
-
-        // Verificar si el usuario existe
+        const userId = req.user;
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ msg: 'Usuario no encontrado' });
         }
 
-        // Generar billeteras para TRON y BSC
-        const tronWallet = await tronWeb.createAccount(); // Lógica original de TronWeb
+        const tronWallet = await tronWeb.createAccount();
         const bscWallet = web3Bsc.eth.accounts.create();
 
-        // Generar códigos QR para las billeteras
         const tronQR = await QRCode.toDataURL(tronWallet.address.base58);
         const bscQR = await QRCode.toDataURL(bscWallet.address);
 
-        // Guardar las billeteras en la base de datos del usuario
         user.tronWallet = tronWallet.address.base58;
         user.bscWallet = bscWallet.address;
         await user.save();
 
-        // Responder con las billeteras generadas
         res.json({
             msg: 'Billeteras temporales generadas y asociadas al usuario',
-            tron: {
-                address: tronWallet.address.base58,
-                privateKey: tronWallet.privateKey,
-                qrCode: tronQR
-            },
-            bsc: {
-                address: bscWallet.address,
-                privateKey: bscWallet.privateKey,
-                qrCode: bscQR
-            }
+            tron: { address: tronWallet.address.base58, qrCode: tronQR },
+            bsc: { address: bscWallet.address, qrCode: bscQR }
         });
     } catch (error) {
-        console.error('Error al generar billetera temporal:', error);
+        console.error('❌ Error al generar billetera temporal:', error);
         res.status(500).json({ msg: 'Error al generar billetera temporal' });
     }
 };
@@ -62,29 +52,22 @@ exports.transferFunds = async (req, res) => {
     const { tronWallet, bscWallet } = req.body;
 
     try {
-        const userId = req.user; // ID del usuario autenticado
+        const userId = req.user;
         const user = await User.findById(userId);
-
         if (!user || !user.mainWallet) {
             return res.status(400).json({ msg: 'No se ha configurado una billetera principal para este usuario' });
         }
 
         const mainWalletAddress = user.mainWallet;
-
-        // Obtener saldos
         const tronBalance = await tronWeb.trx.getBalance(tronWallet.address);
         const bscBalance = await web3Bsc.eth.getBalance(bscWallet.address);
 
-        // Transferencia TRON
         if (tronBalance > 0) {
-            const transaction = await tronWeb.transactionBuilder.sendTrx(
-                mainWalletAddress, tronBalance, tronWallet.address
-            );
+            const transaction = await tronWeb.transactionBuilder.sendTrx(mainWalletAddress, tronBalance, tronWallet.address);
             const signedTransaction = await tronWeb.trx.sign(transaction, tronWallet.privateKey);
             await tronWeb.trx.sendRawTransaction(signedTransaction);
         }
 
-        // Transferencia BSC
         if (bscBalance > 0) {
             const signedTransaction = await web3Bsc.eth.accounts.signTransaction({
                 to: mainWalletAddress,
@@ -97,23 +80,25 @@ exports.transferFunds = async (req, res) => {
 
         res.json({ msg: "Fondos transferidos exitosamente a la billetera principal" });
     } catch (error) {
-        console.error("Error al transferir fondos:", error);
+        console.error("❌ Error al transferir fondos:", error);
         res.status(500).json({ msg: "Error al transferir fondos" });
     }
 };
 
-// Endpoint para generar una URL temporal
+// Endpoint para generar una URL de pago temporal
 exports.generatePaymentPage = async (req, res) => {
+    console.log("📌 Generando URL de pago...");
+    console.log("FRONTEND_URL:", FRONTEND_URL);
+
     const { amount, currency, network } = req.body;
 
     try {
         const userId = req.user;
-        const uniqueId = crypto.randomBytes(16).toString('hex'); // Mover la inicialización aquí
-        console.log("Unique ID generado en backend:", uniqueId);
+        const uniqueId = crypto.randomBytes(16).toString('hex');
 
         const user = await User.findById(userId);
         if (!user || !user.mainWallet) {
-            console.log("Usuario o billetera principal no encontrados:", user);
+            console.log("⚠️ Usuario no encontrado o billetera principal no configurada:", user);
             return res.status(400).json({ msg: 'No se ha configurado una billetera principal para este usuario' });
         }
 
@@ -125,10 +110,9 @@ exports.generatePaymentPage = async (req, res) => {
             address: user.mainWallet,
         };
 
-        // Generar el QR como Data URL
         const qrCode = await QRCode.toDataURL(JSON.stringify(qrPayload));
 
-        // Crear el documento temporal en la base de datos
+        // Guardar la información del pago en la base de datos
         const tempPayment = new TempPayment({
             uniqueId,
             paymentData: {
@@ -137,22 +121,21 @@ exports.generatePaymentPage = async (req, res) => {
                 network,
                 mainWallet: user.mainWallet,
                 userName: user.name,
-                qrCode, // Agregar el QR al documento
+                qrCode,
             }
         });
 
         await tempPayment.save();
 
-        // Generar la URL
-        const url = `${process.env.FRONTEND_BASE_URL}/payment/${uniqueId}`;
+        const url = `${FRONTEND_URL}/payment/${uniqueId}`;
+        console.log("✅ URL generada:", url);
+
         res.json({ url });
     } catch (error) {
-        console.error('Error al generar la página de pago:', error);
+        console.error('❌ Error al generar la página de pago:', error);
         res.status(500).json({ msg: 'Error al generar la página de pago' });
     }
 };
-
-
 
 // Endpoint para obtener los datos del pago desde un uniqueId
 exports.getPaymentData = async (req, res) => {
@@ -167,7 +150,7 @@ exports.getPaymentData = async (req, res) => {
 
         res.json(payment.paymentData);
     } catch (error) {
-        console.error('Error al obtener los datos del pago:', error);
+        console.error('❌ Error al obtener los datos del pago:', error);
         res.status(500).json({ msg: 'Error al obtener los datos del pago' });
     }
 };
