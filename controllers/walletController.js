@@ -88,6 +88,7 @@ exports.transferFunds = async (req, res) => {
 // Endpoint para generar una URL de pago temporal
 exports.generatePaymentPage = async (req, res) => {
     console.log("📌 Generando URL de pago...");
+    const FRONTEND_URL = process.env.PROD_FRONTEND_URL || 'https://payroll-crypto-api.onrender.com';
     console.log("FRONTEND_URL:", FRONTEND_URL);
 
     const { amount, currency, network } = req.body;
