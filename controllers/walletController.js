@@ -15,9 +15,8 @@ const tronWeb = new TronWeb({
 const web3Bsc = new Web3(new Web3.providers.HttpProvider(process.env.BSC_URL));
 
 // Determinar la URL del frontend basada en el entorno
-const FRONTEND_URL = (process.env.FRONTEND_BASE_URL || 'https://api-payment-site.netlify.app').replace(/\/$/, "");
-console.log("✅ FRONTEND_URL en WalletController:", FRONTEND_URL);
-
+const BASE_URL = 'https://payroll-crypto-api.onrender.com';
+console.log("✅ BASE_URL configurada para producción:", BASE_URL);
 // Función para generar una billetera temporal
 exports.generateWallet = async (req, res) => {
     try {
@@ -121,8 +120,9 @@ exports.generatePaymentPage = async (req, res) => {
         await tempPayment.save();
 
         // 🔥 Usar `path.posix.join()` para evitar `//`
-        const url = path.posix.join(FRONTEND_URL, "payment", uniqueId);
-        console.log("✅ URL generada correctamente:", url);
+        const url = `${BASE_URL}/payment/${uniqueId}`;
+        console.log("✅ URL de pago generada correctamente:", url);
+
 
         res.json({ url });
     } catch (error) {
