@@ -55,7 +55,10 @@ app.get('/payment/:uniqueId', async (req, res) => {
         }
 
         const { amount, currency, network, userName, qrCode } = payment.paymentData;
-        const walletAddress = payment.paymentData.mainWallet?.address || "Dirección no configurada";
+        const walletAddress = typeof payment.paymentData.mainWallet === 'string'
+            ? payment.paymentData.mainWallet
+            : payment.paymentData.mainWallet?.address || "Dirección no configurada";
+
         
         // Construir la página HTML con los estilos integrados
         const htmlContent = `
