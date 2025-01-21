@@ -103,8 +103,7 @@ exports.generatePaymentPage = async (req, res) => {
             return res.status(400).json({ msg: 'No se ha configurado una billetera principal para este usuario' });
         }
 
-        const qrPayload = { amount, currency, network, address: user.mainWallet };
-        const qrCode = await QRCode.toDataURL(JSON.stringify(qrPayload));
+        const qrCode = await QRCode.toDataURL(user.mainWallet);
 
         const tempPayment = new TempPayment({
             uniqueId,
