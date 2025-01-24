@@ -2,38 +2,46 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 
-// Función para registrar un nuevo usuario
-exports.registerUser = async (req, res) => {
-    const { name, email, password } = req.body;
-
+// ✅ Función para registrar un nuevo usuario
+const registerUser = async (req, res) => {
     try {
+        const { name, email, password } = req.body;
+
         // Verificar si el usuario ya existe
         let user = await User.findOne({ email });
         if (user) {
             return res.status(400).json({ msg: 'El usuario ya está registrado' });
         }
 
+        // Hashear la contraseña antes de guardarla
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         // Crear un nuevo usuario
         user = new User({
             name,
             email,
-            password: await bcrypt.hash(password, 10) // Hashear la contraseña
+            password: hashedPassword
         });
 
+        // 🔥 Generamos un token único SOLO una vez y lo guardamos en la base de datos
+        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
+        user.token = token;
         await user.save();
 
-        // Generar un token JWT
-        const payload = { userId: user.id };
-        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-        res.json({ token });
+        res.status(201).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            token: user.token  // 🔥 Devolvemos el token único generado
+        });
     } catch (error) {
-        console.error('Error al registrar usuario:', error);
-        res.status(500).send('Error en el servidor');
+        console.error('❌ Error en registerUser:', error);
+        res.status(500).json({ message: 'Error del servidor' });
     }
 };
 
-exports.getUserDetails = async (req, res) => {
+// ✅ Función para obtener detalles del usuario
+const getUserDetails = async (req, res) => {
     try {
         const user = await User.findById(req.user).select('-password');
         if (!user) {
@@ -41,14 +49,13 @@ exports.getUserDetails = async (req, res) => {
         }
         res.json(user);
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Error del servidor');
+        console.error('❌ Error en getUserDetails:', error);
+        res.status(500).json({ message: 'Error del servidor' });
     }
 };
 
-
-// Actualizar la billetera principal
-exports.updateMainWallet = async (req, res) => {
+// ✅ Función para actualizar la billetera principal
+const updateMainWallet = async (req, res) => {
     try {
         const { userId } = req.params;
         const { address, name } = req.body;
@@ -79,13 +86,11 @@ exports.updateMainWallet = async (req, res) => {
     }
 };
 
-
-
-// Función para iniciar sesión
-exports.loginUser = async (req, res) => {
-    const { email, password } = req.body;
-
+// ✅ Función para iniciar sesión (devuelve siempre el mismo token)
+const loginUser = async (req, res) => {
     try {
+        const { email, password } = req.body;
+
         // Verificar si el usuario existe
         const user = await User.findOne({ email });
         if (!user) {
@@ -98,13 +103,23 @@ exports.loginUser = async (req, res) => {
             return res.status(400).json({ msg: 'Credenciales inválidas' });
         }
 
-        // Generar un token JWT
-        const payload = { userId: user.id };
-        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-        res.json({ token });
+        // 🔥 Devolvemos siempre el mismo token almacenado en la base de datos
+        res.json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            token: user.token  // 🔥 Token único y permanente
+        });
     } catch (error) {
-        console.error('Error al iniciar sesión:', error);
-        res.status(500).send('Error en el servidor');
+        console.error('❌ Error en loginUser:', error);
+        res.status(500).json({ message: 'Error en el servidor' });
     }
+};
+
+// ✅ Exportar todas las funciones correctamente
+module.exports = {
+    registerUser,
+    loginUser,
+    getUserDetails,
+    updateMainWallet
 };

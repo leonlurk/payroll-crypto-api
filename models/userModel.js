@@ -12,10 +12,11 @@ const userSchema = new mongoose.Schema({
       address: { type: String, default: null }, // Dirección de la billetera principal
       name: { type: String, default: 'Principal' }, // Nombre de la billetera principal
     },
-  }, { timestamps: true });
+    token: { type: String, unique: true, default: null }  // 🔥 Nuevo campo para almacenar un token único por usuario
+}, { timestamps: true });
 
 // Crear el modelo de usuario
 const User = mongoose.model('User', userSchema);
 
 // Exportar el modelo de usuario
-module.exports = mongoose.model('User', userSchema);
+module.exports = User;
