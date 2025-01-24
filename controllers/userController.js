@@ -24,7 +24,7 @@ const registerUser = async (req, res) => {
         });
 
         // 🔥 Generamos un token único SOLO una vez y lo guardamos en la base de datos
-        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET);
+        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
         user.token = token;
         await user.save();
 
