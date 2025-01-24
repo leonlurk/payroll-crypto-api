@@ -51,21 +51,34 @@ exports.getUserDetails = async (req, res) => {
 exports.updateMainWallet = async (req, res) => {
     try {
         const { userId } = req.params;
-        const { mainWallet } = req.body;
+        const { address, name } = req.body;
 
-        // Actualizar la billetera principal en la base de datos
-        const user = await User.findByIdAndUpdate(userId, { mainWallet }, { new: true });
+        console.log(`🔄 Intentando actualizar billetera principal para usuario: ${userId}`);
+        console.log(`📌 Datos recibidos - Address: ${address}, Name: ${name}`);
 
-        if (!user) {
-            return res.status(404).json({ msg: 'Usuario no encontrado' });
+        // Validar que los datos sean correctos
+        if (!address || !name) {
+            return res.status(400).json({ error: "❌ Dirección y nombre de la billetera son requeridos" });
         }
 
-        res.json({ msg: 'Billetera principal actualizada', user });
+        // Buscar usuario y actualizar su mainWallet
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ msg: '⚠️ Usuario no encontrado' });
+        }
+
+        user.mainWallet = { address, name };
+        await user.save();  // Guardar en MongoDB
+
+        console.log(`✅ Billetera actualizada correctamente: ${JSON.stringify(user.mainWallet)}`);
+
+        res.json({ msg: 'Billetera principal actualizada correctamente', user });
     } catch (error) {
-        console.error('Error al actualizar la billetera principal:', error.message);
-        res.status(500).json({ msg: 'Error del servidor' });
+        console.error('❌ Error al actualizar la billetera principal:', error.message);
+        res.status(500).json({ msg: 'Error en el servidor' });
     }
 };
+
 
 
 // Función para iniciar sesión
