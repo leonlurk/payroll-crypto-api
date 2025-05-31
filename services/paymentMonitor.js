@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const blockchainConfig = require('../config/blockchainConfig');
 const { TronWeb } = require('tronweb');
 const ethers = require('ethers');
+const firebaseService = require('./firebaseService'); // Importar servicio de Firebase
 
 // Remove console logs for ethers.utils as it doesn't exist
 
@@ -362,11 +363,27 @@ function determineFinalStatus(paymentData, receivedAmountStr) {
     }
 }
 
-// Placeholder: Notification function
+// Modificar la función sendPaymentNotification para usar Firebase
 async function sendPaymentNotification(payment, status) {
-    console.log(`🔔 NOTIFICATION: Payment ${payment.uniqueId} status changed to ${status}. Tx: ${payment.transactionHash || 'N/A'}`);
-    // TODO: Implement actual notification logic (email, webhook, etc.)
-    // Consider associating payment with user email if needed
+    try {
+        // Guardar o actualizar el pago en Firebase
+        if (status === 'pending' || status === 'created') {
+            await firebaseService.savePaymentToFirestore(payment);
+        } else {
+            const additionalData = {};
+            if (payment.paymentHash) {
+                additionalData.paymentHash = payment.paymentHash;
+            }
+            if (payment.blockNumber) {
+                additionalData.blockNumber = payment.blockNumber;
+            }
+            await firebaseService.updatePaymentStatus(payment.uniqueId, status, additionalData);
+        }
+        
+        console.log(`[Monitor] Notificación enviada a Firebase para pago ${payment.uniqueId}, estado: ${status}`);
+    } catch (error) {
+        console.error(`[Monitor] Error al enviar notificación a Firebase:`, error);
+    }
 }
 
 // Function to process a single payment

@@ -19,6 +19,7 @@
     "ethereumjs-tx": "^2.1.2",
     "ethers": "^6.13.7",
     "express": "^4.21.1",
+    "firebase-admin": "^13.4.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.8.0",
     "node-cron": "^3.0.3",

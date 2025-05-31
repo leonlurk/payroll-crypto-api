@@ -9,6 +9,7 @@ const userRoutes = require('./routes/userRoutes');
 const walletRoutes = require('./routes/walletRoutes');
 const path = require("path");
 const paymentMonitor = require('./services/paymentMonitor'); // Import the monitor service
+const { db, auth, storage } = require('./config/firebaseConfig'); // Importar Firebase
 
 // Detectar entorno (local o producción)
 const isProduction = process.env.ENV === 'production';
@@ -198,19 +199,54 @@ app.get('/payment/:uniqueId', async (req, res) => {
 
 
 // 🔹 Conexión a la base de datos MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-    // useNewUrlParser and useUnifiedTopology are deprecated but harmless for now
-})
-    .then(() => {
-        console.log('✅ Conectado a la base de datos');
-        // Start the payment monitor ONLY after successful DB connection
-        paymentMonitor.startMonitoring(); 
-    })
-    .catch((err) => {
-        console.error('❌ Error al conectar a la base de datos:', err);
-        // Exit or handle error appropriately if DB connection fails
-        process.exit(1);
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log('🎉 Conexión a MongoDB establecida con éxito');
+    
+    // Iniciar el monitor de pagos después de conectar a MongoDB
+    paymentMonitor.startMonitoring();
+
+    // 🔹 Iniciar servidor Express
+    app.listen(process.env.PORT || 5000, () => {
+      console.log(`🚀 API de pago en criptomonedas ejecutándose en el puerto ${process.env.PORT || 5000}`);
+      console.log(`📌 Firebase conectada al proyecto: ape-prop`);
     });
+  })
+  .catch(err => {
+    console.error('❌ Error al conectar a MongoDB:', err);
+    process.exit(1);
+  });
+
+// Ruta para obtener pagos de Firebase
+app.get('/api/firebase/payments', async (req, res) => {
+  try {
+    const { db } = require('./config/firebaseConfig');
+    const paymentsSnapshot = await db.collection('payments').get();
+    const payments = paymentsSnapshot.docs.map(doc => doc.data());
+    
+    res.json({ success: true, payments });
+  } catch (error) {
+    console.error('Error al obtener pagos de Firebase:', error);
+    res.status(500).json({ success: false, error: 'Error al obtener pagos' });
+  }
+});
+
+// Ruta para obtener un pago específico de Firebase
+app.get('/api/firebase/payments/:uniqueId', async (req, res) => {
+  try {
+    const { uniqueId } = req.params;
+    const payment = await require('./services/firebaseService').getPaymentById(uniqueId);
+    
+    if (!payment) {
+      return res.status(404).json({ success: false, error: 'Pago no encontrado' });
+    }
+    
+    res.json({ success: true, payment });
+  } catch (error) {
+    console.error(`Error al obtener pago ${req.params.uniqueId} de Firebase:`, error);
+    res.status(500).json({ success: false, error: 'Error al obtener pago' });
+  }
+});
 
 // 🔹 Definir las rutas de usuario y billetera
 app.use('/api/users', userRoutes);
@@ -225,12 +261,4 @@ console.log("Registrando endpoint /api/health");
 app.get('/api/health', (req, res) => {
   console.log("Se recibió una petición GET /api/health");
   res.json({ status: 'ok' });
-});
-
-// Definir el puerto
-const PORT = process.env.PORT || 3000;
-
-// Iniciar el servidor
-app.listen(PORT, () => {
-    console.log(`🎯 Servidor corriendo en el puerto ${PORT}`);
 });
