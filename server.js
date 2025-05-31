@@ -221,6 +221,11 @@ app.get('/', (req, res) => {
     res.send('🚀 ¡Bienvenido a la API de Payroll Crypto!');
 });
 
+// Endpoint de health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
 // Definir el puerto
 const PORT = process.env.PORT || 3000;
 
