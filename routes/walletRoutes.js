@@ -4,6 +4,7 @@ const auth = require('../middleware/auth');
 const router = express.Router();
 const { generatePaymentPage } = require('../controllers/walletController');
 const { getPaymentData } = require('../controllers/walletController');
+const { getPaymentStatusByUniqueId } = require('../controllers/walletController');
 
 // Ruta para generar una billetera temporal - Protegida
 router.post('/generate-wallet', auth, generateWallet);
@@ -16,5 +17,8 @@ router.post('/generate-payment-page', auth, generatePaymentPage);
 
 // Nueva ruta para obtener los datos del pago
 router.get('/payment-data/:uniqueId', getPaymentData);
+
+// 🔐 Ruta protegida para consultar el estado de un pago específico
+router.get('/payment-status/:uniqueId', auth, getPaymentStatusByUniqueId);
 
 module.exports = router;

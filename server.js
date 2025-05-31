@@ -8,6 +8,7 @@ const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
 const walletRoutes = require('./routes/walletRoutes');
 const path = require("path");
+const paymentMonitor = require('./services/paymentMonitor'); // Import the monitor service
 
 // Detectar entorno (local o producción)
 const isProduction = process.env.ENV === 'production';
@@ -198,11 +199,18 @@ app.get('/payment/:uniqueId', async (req, res) => {
 
 // 🔹 Conexión a la base de datos MongoDB
 mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+    // useNewUrlParser and useUnifiedTopology are deprecated but harmless for now
 })
-    .then(() => console.log('✅ Conectado a la base de datos'))
-    .catch((err) => console.error('❌ Error al conectar a la base de datos:', err));
+    .then(() => {
+        console.log('✅ Conectado a la base de datos');
+        // Start the payment monitor ONLY after successful DB connection
+        paymentMonitor.startMonitoring(); 
+    })
+    .catch((err) => {
+        console.error('❌ Error al conectar a la base de datos:', err);
+        // Exit or handle error appropriately if DB connection fails
+        process.exit(1);
+    });
 
 // 🔹 Definir las rutas de usuario y billetera
 app.use('/api/users', userRoutes);
