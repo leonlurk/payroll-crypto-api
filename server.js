@@ -221,8 +221,9 @@ app.get('/', (req, res) => {
     res.send('🚀 ¡Bienvenido a la API de Payroll Crypto!');
 });
 
-// Endpoint de health check
+console.log("Registrando endpoint /api/health");
 app.get('/api/health', (req, res) => {
+  console.log("Se recibió una petición GET /api/health");
   res.json({ status: 'ok' });
 });
 
