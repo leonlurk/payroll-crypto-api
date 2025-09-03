@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pm2 logs:*)",
+      "Bash(wmic:*)",
+      "Read(/C:\\Users\\Administrator\\Desktop\\metatrader-api-v2/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

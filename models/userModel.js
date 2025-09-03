@@ -14,9 +14,17 @@ const transactionSchema = new mongoose.Schema({
 // Definir el esquema de usuario
 const walletSchema = new mongoose.Schema({
     tronAddress: String,
-    tronPrivateKey: String,
+    tronPrivateKey: {
+        encrypted: String,
+        iv: String,
+        authTag: String
+    },
     bscAddress: String,
-    bscPrivateKey: String,
+    bscPrivateKey: {
+        encrypted: String,
+        iv: String,
+        authTag: String
+    },
     createdAt: {
         type: Date,
         default: Date.now
